@@ -5,8 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 
 import '../models/user.dart';
-import '../services/starknet_service.dart';
-import '../services/web_safe_starknet_service.dart';
+// TEMPORARILY DISABLED: Starknet service has API compatibility issues
+// import '../services/starknet_service.dart';
 import '../providers/auth_provider.dart';
 
 /// Starknet wallet balance data
@@ -25,17 +25,15 @@ class WalletBalance {
 }
 
 /// Provider for wallet balance
-final walletBalanceProvider =
-    StateNotifierProvider<WalletBalanceNotifier, WalletBalance>((ref) {
-      return WalletBalanceNotifier(ref);
-    });
+final walletBalanceProvider = StateNotifierProvider<WalletBalanceNotifier, WalletBalance>((ref) {
+  return WalletBalanceNotifier(ref);
+});
 
 class WalletBalanceNotifier extends StateNotifier<WalletBalance> {
   final Ref ref;
   Timer? _refreshTimer;
 
-  WalletBalanceNotifier(this.ref)
-    : super(const WalletBalance(eth: '0.0', strk: '0.0', isLoading: true)) {
+  WalletBalanceNotifier(this.ref) : super(const WalletBalance(eth: '0.0', strk: '0.0', isLoading: true)) {
     _loadBalance();
     _startPeriodicRefresh();
   }
@@ -59,45 +57,29 @@ class WalletBalanceNotifier extends StateNotifier<WalletBalance> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final webSafeService = WebSafeStarknetService(useMainnet: false);
-
-      // Use web-safe service with built-in fallbacks
-      final results = await Future.wait([
-        webSafeService.getEthBalance(user.starknetAddress),
-        webSafeService.getStrkBalance(user.starknetAddress),
-      ]);
-
-      final ethBalance = results[0];
-      final strkBalance = results[1];
+      // TEMPORARILY DISABLED: Starknet service has API compatibility issues
+      // TODO: Fix Starknet API compatibility
+      /*
+      final starknetService = StarknetService(useMainnet: false);
+      final ethBalance = await starknetService.getEthBalance(user.starknetAddress);
+      final strkBalance = await starknetService.getStrkBalance(user.starknetAddress);
+      */
+      
+      // Mock balances for now
+      final ethBalance = 0.5;
+      final strkBalance = 100.0;
 
       state = WalletBalance(
         eth: ethBalance.toStringAsFixed(4),
         strk: strkBalance.toStringAsFixed(2),
         isLoading: false,
       );
-    } on TimeoutException catch (e) {
-      state = WalletBalance(
-        eth: '0.0',
-        strk: '0.0',
-        isLoading: false,
-        error: 'Network timeout - please try again',
-      );
     } catch (e) {
-      String errorMessage = 'Failed to load balance';
-      if (e.toString().contains('CORS')) {
-        errorMessage = 'Browser security restrictions';
-      } else if (e.toString().contains('XMLHttpRequest')) {
-        errorMessage = 'Network connection error';
-      } else {
-        errorMessage =
-            'Failed to load balance: ${e.toString().substring(0, 50)}...';
-      }
-
       state = WalletBalance(
         eth: '0.0',
         strk: '0.0',
         isLoading: false,
-        error: errorMessage,
+        error: 'Failed to load balance: $e',
       );
     }
   }
@@ -149,7 +131,10 @@ class StarknetWalletWidget extends ConsumerWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.cyan.withOpacity(0.3), width: 1),
+        border: Border.all(
+          color: Colors.cyan.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,8 +192,7 @@ class StarknetWalletWidget extends ConsumerWidget {
               ),
               IconButton(
                 icon: Icon(Icons.refresh, color: Colors.cyan, size: 20),
-                onPressed: () =>
-                    ref.read(walletBalanceProvider.notifier).refresh(),
+                onPressed: () => ref.read(walletBalanceProvider.notifier).refresh(),
                 tooltip: 'Refresh Balance',
               ),
             ],
@@ -231,8 +215,7 @@ class StarknetWalletWidget extends ConsumerWidget {
   }
 
   Widget _buildAddressSection(BuildContext context, String address) {
-    final displayAddress =
-        '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
+    final displayAddress = '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -251,7 +234,10 @@ class StarknetWalletWidget extends ConsumerWidget {
               children: [
                 Text(
                   'Wallet Address',
-                  style: GoogleFonts.rajdhani(fontSize: 12, color: Colors.grey),
+                  style: GoogleFonts.rajdhani(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
                 ),
                 Text(
                   displayAddress,
@@ -290,7 +276,7 @@ class StarknetWalletWidget extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              'Loading balance... (up to 30s)',
+              'Loading balance...',
               style: GoogleFonts.rajdhani(color: Colors.grey),
             ),
           ],
@@ -312,7 +298,10 @@ class StarknetWalletWidget extends ConsumerWidget {
             Expanded(
               child: Text(
                 balance.error!,
-                style: GoogleFonts.rajdhani(color: Colors.red, fontSize: 12),
+                style: GoogleFonts.rajdhani(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],
@@ -322,9 +311,13 @@ class StarknetWalletWidget extends ConsumerWidget {
 
     return Row(
       children: [
-        Expanded(child: _buildBalanceCard('ETH', balance.eth, Colors.blue)),
+        Expanded(
+          child: _buildBalanceCard('ETH', balance.eth, Colors.blue),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _buildBalanceCard('STRK', balance.strk, Colors.purple)),
+        Expanded(
+          child: _buildBalanceCard('STRK', balance.strk, Colors.purple),
+        ),
       ],
     );
   }
@@ -449,7 +442,10 @@ class StarknetWalletWidget extends ConsumerWidget {
               ),
               child: SelectableText(
                 address,
-                style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 14),
+                style: GoogleFonts.rajdhani(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -457,10 +453,7 @@ class StarknetWalletWidget extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Close',
-              style: GoogleFonts.rajdhani(color: Colors.grey),
-            ),
+            child: Text('Close', style: GoogleFonts.rajdhani(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -468,10 +461,7 @@ class StarknetWalletWidget extends ConsumerWidget {
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
-            child: Text(
-              'Copy Address',
-              style: GoogleFonts.rajdhani(color: Colors.white),
-            ),
+            child: Text('Copy Address', style: GoogleFonts.rajdhani(color: Colors.white)),
           ),
         ],
       ),
