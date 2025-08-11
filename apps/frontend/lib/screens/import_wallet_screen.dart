@@ -6,7 +6,7 @@ import 'package:astratrade_app/services/secure_storage_service.dart';
 import 'package:astratrade_app/services/wallet_import_service.dart';
 import 'package:astratrade_app/services/extended_exchange_api_service.dart';
 import 'package:astratrade_app/services/unified_wallet_setup_service.dart';
-import 'package:astratrade_app/widgets/cosmic_particle_background.dart';
+// Removed cosmic background - using Material Design
 import 'package:astratrade_app/providers/auth_provider.dart';
 import 'package:astratrade_app/models/user.dart';
 
@@ -205,43 +205,37 @@ class _ImportWalletScreenState extends ConsumerState<ImportWalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        title: const Text('Import Wallet'),
+        backgroundColor: Colors.blue[600],
+        foregroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          const CosmicParticleBackground(),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 32),
-                    _buildImportTypeSelector(),
-                    const SizedBox(height: 24),
-                    _selectedType == ImportType.seedPhrase
-                        ? _buildSeedPhraseInput()
-                        : _buildPrivateKeyInput(),
-                    const SizedBox(height: 32),
-                    _buildValidationStatus(),
-                    const SizedBox(height: 24),
-                    _buildImportButton(),
-                  ],
-                ),
-              ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 32),
+                _buildImportTypeSelector(),
+                const SizedBox(height: 24),
+                _selectedType == ImportType.seedPhrase
+                    ? _buildSeedPhraseInput()
+                    : _buildPrivateKeyInput(),
+                const SizedBox(height: 32),
+                _buildValidationStatus(),
+                const SizedBox(height: 24),
+                _buildImportButton(),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -252,18 +246,18 @@ class _ImportWalletScreenState extends ConsumerState<ImportWalletScreen> {
       children: [
         Text(
           'Import Your Wallet',
-          style: GoogleFonts.orbitron(
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.black87,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Securely connect your existing Starknet wallet',
-          style: GoogleFonts.rajdhani(
+          style: TextStyle(
             fontSize: 16,
-            color: Colors.white70,
+            color: Colors.grey[600],
           ),
         ),
       ],
@@ -303,9 +297,9 @@ class _ImportWalletScreenState extends ConsumerState<ImportWalletScreen> {
       children: [
         Text(
           'Seed Phrase (12 or 24 words)',
-          style: GoogleFonts.rajdhani(
+          style: TextStyle(
             fontSize: 16,
-            color: Colors.white,
+            color: Colors.black87,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -353,9 +347,9 @@ class _ImportWalletScreenState extends ConsumerState<ImportWalletScreen> {
       children: [
         Text(
           'Private Key (Hex)',
-          style: GoogleFonts.rajdhani(
+          style: TextStyle(
             fontSize: 16,
-            color: Colors.white,
+            color: Colors.black87,
             fontWeight: FontWeight.bold,
           ),
         ),

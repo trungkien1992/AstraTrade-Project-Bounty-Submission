@@ -59,50 +59,48 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            // Progress indicator
-            LinearProgressIndicator(
-              value: 0.75,
-              backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
-            ),
-            const SizedBox(height: 32),
+              // Progress indicator
+              LinearProgressIndicator(
+                value: 0.75,
+                backgroundColor: Colors.grey[300],
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+              ),
+              const SizedBox(height: 20),
 
-            const Text(
-              'What do you want to achieve?',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+              const Text(
+                'What do you want to achieve?',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Select up to 3 goals that best describe your trading objectives.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
+              const SizedBox(height: 8),
+              Text(
+                'Select up to 3 goals that best describe your trading objectives.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
-            // Goals Grid
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.0,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: _goals.length,
-                itemBuilder: (context, index) {
+              // Goals Grid
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: _goals.length,
+                  itemBuilder: (context, index) {
                   final goal = _goals[index];
                   final isSelected = _selectedGoals.contains(goal['value']);
                   
@@ -110,10 +108,10 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     onTap: () => _toggleGoal(goal['value']),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected ? Colors.blue[600]! : Colors.grey[300]!,
                           width: isSelected ? 2 : 1,
@@ -123,7 +121,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                             color: isSelected 
                                 ? Colors.blue.withOpacity(0.1) 
                                 : Colors.grey.withOpacity(0.05),
-                            blurRadius: isSelected ? 8 : 4,
+                            blurRadius: isSelected ? 6 : 3,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -133,24 +131,24 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: isSelected 
                                   ? goal['color'].withOpacity(0.15)
                                   : goal['color'].withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Icon(
                               goal['icon'],
                               color: goal['color'],
-                              size: 24,
+                              size: 32,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Text(
                             goal['title'],
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: isSelected ? Colors.blue[700] : Colors.black87,
                             ),
@@ -158,23 +156,23 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
                             goal['subtitle'],
                             style: TextStyle(
-                              fontSize: 9,
+                              fontSize: 12,
                               color: Colors.grey[600],
                             ),
                             textAlign: TextAlign.center,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (isSelected) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 6),
                             Icon(
                               Icons.check_circle,
                               color: Colors.blue[600],
-                              size: 16,
+                              size: 18,
                             ),
                           ],
                         ],
@@ -183,57 +181,61 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                   );
                 },
               ),
+            ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Selection Counter
-            if (_selectedGoals.isNotEmpty)
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.blue[200]!),
+            // Selection Counter and Continue Button
+            Column(
+              children: [
+                if (_selectedGoals.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Text(
+                      '${_selectedGoals.length}/3 goals selected',
+                      style: TextStyle(
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
                   ),
-                  child: Text(
-                    '${_selectedGoals.length}/3 goals selected',
-                    style: TextStyle(
-                      color: Colors.blue[700],
-                      fontWeight: FontWeight.w600,
+                
+                const SizedBox(height: 16),
+
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _selectedGoals.isNotEmpty ? _handleNext : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[600],
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
-
-            const SizedBox(height: 20),
-
-            // Continue Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _selectedGoals.isNotEmpty ? _handleNext : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-                child: const Text(
-                  'Continue',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              ],
             ),
-            const SizedBox(height: 40), // Increased padding for better button visibility
-            ],
-          ),
+            const SizedBox(height: 16),
+          ],
+        ),
         ),
       ),
     );

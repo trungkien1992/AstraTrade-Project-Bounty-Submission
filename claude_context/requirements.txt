@@ -1,0 +1,39 @@
+# Core dependencies
+gitpython==3.1.40
+tree-sitter==0.21.0
+tree-sitter-python==0.21.0
+tree-sitter-javascript==0.21.0
+tree-sitter-typescript==0.21.1
+tree-sitter-java==0.21.0
+tree-sitter-cpp==0.22.0
+tree-sitter-rust==0.21.2
+tree-sitter-go==0.21.0
+
+# Machine learning and embeddings
+sentence-transformers==2.2.2
+torch>=1.13.0
+transformers==4.36.2
+
+# Vector and search databases
+pymilvus==2.3.4
+elasticsearch==8.11.0
+
+# Web framework and API
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# Utilities
+numpy==1.24.4
+pandas==2.1.4
+tiktoken==0.5.2
+python-dotenv==1.0.0
+aiofiles==23.2.1
+httpx==0.25.2
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+isort==5.12.0
+mypy==1.7.1

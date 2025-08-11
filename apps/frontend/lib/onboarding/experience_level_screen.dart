@@ -73,7 +73,7 @@ class _ExperienceLevelScreenState extends ConsumerState<ExperienceLevelScreen> {
                 Colors.purple,
               ),
 
-              const Spacer(),
+              const SizedBox(height: 40),
 
               // Next Button
               SizedBox(
@@ -194,6 +194,7 @@ class _ExperienceLevelScreenState extends ConsumerState<ExperienceLevelScreen> {
         .read(onboardingProvider.notifier)
         .setExperienceLevel(_selectedExperience);
 
+    // Continue to practice amount screen (original flow)
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const PracticeAmountScreen()),

@@ -284,18 +284,18 @@ class WalletImportService {
         throw Exception('Failed to derive address from private key');
       }
       
-      // Generate Extended Exchange API key for this user
-      final extendedExchangeApiKey = ExtendedExchangeApiService.generateDeterministicApiKey(address);
+      // Note: API key will be generated on-demand when user starts trading
+      // This follows the deferred API key generation pattern
       
       print('✅ Fresh wallet created successfully!');
       print('   Private Key: ${privateKey.substring(0, 10)}...');
       print('   Address: $address');
-      print('   Extended Exchange API Key: ${extendedExchangeApiKey.substring(0, 10)}...');
+      print('   Note: Extended Exchange API key will be generated when trading starts');
       
       return {
         'privateKey': privateKey,
         'address': address,
-        'extendedExchangeApiKey': extendedExchangeApiKey,
+        'extendedExchangeApiKey': '', // Empty string instead of null
       };
     } catch (e) {
       print('❌ Fresh wallet creation failed: $e');

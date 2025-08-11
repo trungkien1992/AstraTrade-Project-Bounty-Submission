@@ -307,6 +307,27 @@ class SecureStorageService {
     return 'astratrade_device_salt_v1';
   }
   
+  /// Store generic key-value pair
+  Future<void> storeKey(String key, String value) async {
+    try {
+      await _secureStorage.write(key: key, value: value);
+      debugPrint('✅ Key stored: $key');
+    } catch (e) {
+      log('❌ Failed to store key $key: $e');
+      throw Exception('Failed to store key: $e');
+    }
+  }
+  
+  /// Get generic key value
+  Future<String?> getKey(String key) async {
+    try {
+      return await _secureStorage.read(key: key);
+    } catch (e) {
+      log('❌ Failed to get key $key: $e');
+      return null;
+    }
+  }
+
   /// Securely store trading credentials
   Future<void> storeTradingCredentials({
     required String apiKey,

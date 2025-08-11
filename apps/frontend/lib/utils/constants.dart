@@ -1,4 +1,4 @@
-import '../config/secrets.dart';
+import '../config/secrets.dart' as secrets;
 
 /// Application-wide constants for AstraTrade
 
@@ -14,7 +14,7 @@ class AppConstants {
   static const String buildNumber = '1';
   
   // Web3Auth Configuration
-  static const String web3AuthClientId = WEB3AUTH_CLIENT_ID; // Now loaded from secrets.dart
+  static const String web3AuthClientId = secrets.web3AuthClientId; // From secrets.dart
   static const String web3AuthRedirectUrl = 'astratrade://auth';
   static const String web3AuthDomain = 'astratrade.io'; // Production domain
   

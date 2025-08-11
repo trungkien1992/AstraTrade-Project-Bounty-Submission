@@ -435,12 +435,29 @@ class ExtendedExchangeApiService {
   /// IMPORTANT: This is for TESTING ONLY - use createUserAccount for production
   @Deprecated('Use createUserAccount for production API key generation')
   static String generateDeterministicApiKey(String starknetAddress) {
-    // TESTING ONLY: Use the provided test key for all testing scenarios
-    // This allows testing real trading orders with the shared test account
-    return const String.fromEnvironment(
+    // Check if environment variable is set
+    const envApiKey = String.fromEnvironment(
       'EXTENDED_EXCHANGE_API_KEY',
-      defaultValue: '', // Set via environment variable
+      defaultValue: '',
     );
+    
+    if (envApiKey.isNotEmpty) {
+      return envApiKey;
+    }
+    
+    // Fallback: Generate a deterministic API key based on the address
+    // This ensures new wallets can still get an API key for testing
+    final cleanAddress = starknetAddress.startsWith('0x') 
+        ? starknetAddress.substring(2) 
+        : starknetAddress;
+    
+    // Create a 32-character API key from address parts
+    final keyPart1 = cleanAddress.substring(0, 16).padRight(16, '0');
+    final keyPart2 = cleanAddress.substring(
+      cleanAddress.length > 16 ? cleanAddress.length - 16 : 0
+    ).padRight(16, '0');
+    
+    return '$keyPart1$keyPart2'.substring(0, 32);
   }
 
   /// Check if Extended Exchange API is available

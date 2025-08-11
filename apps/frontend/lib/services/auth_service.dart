@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:collection';
+import 'package:flutter/foundation.dart';
 import 'package:web3auth_flutter/web3auth_flutter.dart';
 import 'package:web3auth_flutter/enums.dart' as web3auth;
 import 'package:web3auth_flutter/input.dart';
@@ -11,10 +12,17 @@ import 'secure_storage_service.dart';
 import 'extended_exchange_api_service.dart';
 import 'unified_wallet_setup_service.dart';
 import 'starknet_service.dart';
+import 'web3auth_web_service.dart';
 
 class AuthService {
   static const String _clientId = AppConstants.web3AuthClientId;
-  static const String _redirectUrl = AppConstants.web3AuthRedirectUrl;
+  static String get _redirectUrl {
+    // Use different redirect URLs for web vs mobile
+    if (kIsWeb) {
+      return 'http://127.0.0.1:9000';
+    }
+    return AppConstants.web3AuthRedirectUrl;
+  }
   
   bool _isInitialized = false;
   final SecureStorageService _secureStorage;
@@ -26,6 +34,15 @@ class AuthService {
     if (_isInitialized) return;
 
     try {
+      // Use web-specific service for web platform
+      if (kIsWeb) {
+        await Web3AuthWebService.initialize();
+        _isInitialized = true;
+        log('Web3Auth web service initialized successfully');
+        return;
+      }
+      
+      // Use Flutter plugin for mobile platforms
       await Web3AuthFlutter.init(
         Web3AuthOptions(
           clientId: _clientId,
@@ -64,6 +81,12 @@ class AuthService {
     }
 
     try {
+      // Use web-specific service for web platform
+      if (kIsWeb) {
+        return await Web3AuthWebService.signInWithGoogle();
+      }
+      
+      // Use Flutter plugin for mobile platforms
       // Attempt to initialize existing session first
       try {
         await Web3AuthFlutter.initialize();
@@ -187,7 +210,11 @@ class AuthService {
     
     // Try to sign out from Web3Auth, but don't fail if it errors
     try {
-      await Web3AuthFlutter.logout();
+      if (kIsWeb) {
+        await Web3AuthWebService.signOut();
+      } else {
+        await Web3AuthFlutter.logout();
+      }
       log('✅ Web3Auth logout successful');
     } catch (e) {
       log('⚠️ Web3Auth logout failed (but continuing): $e');

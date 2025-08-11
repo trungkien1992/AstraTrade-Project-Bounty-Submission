@@ -12,6 +12,7 @@ import 'services/performance_monitoring_service.dart';
 import 'services/health_monitoring_service.dart';
 import 'config/app_config.dart';
 import 'widgets/onboarding_gate.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

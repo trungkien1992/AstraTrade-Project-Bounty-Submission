@@ -6,12 +6,11 @@ import 'package:astratrade_app/services/auth_service.dart';
 import 'package:astratrade_app/providers/auth_provider.dart';
 import 'package:astratrade_app/screens/import_wallet_screen.dart';
 import 'package:astratrade_app/screens/learn_more_modal.dart';
-import 'package:astratrade_app/widgets/enhanced_cosmic_background.dart';
-import 'package:astratrade_app/widgets/cosmic_logo.dart';
+// Removed gamified widgets - focus on core trading flow
 import 'package:astratrade_app/models/user.dart';
-import 'package:astratrade_app/services/wallet_import_service.dart';
 import 'package:astratrade_app/services/secure_storage_service.dart';
 import 'package:astratrade_app/services/unified_wallet_setup_service.dart';
+import 'package:astratrade_app/services/unified_wallet_onboarding_service.dart';
 import 'package:astratrade_app/main.dart';
 import 'dart:math' as math;
 
@@ -85,20 +84,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
   void _navigateToImportWallet() {
     Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const ImportWalletScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeInOut,
-            )),
-            child: child,
-          );
-        },
+      MaterialPageRoute(
+        builder: (context) => const ImportWalletScreen(),
       ),
     );
   }
@@ -114,21 +101,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
 
   Future<void> _createFreshWallet() async {
     try {
-      print('🚀 Starting fresh wallet creation with trading setup...');
+      print('🚀 Starting fresh wallet creation with Extended Exchange onboarding...');
       
-      // Use unified wallet setup service for consistent integration
-      final newUser = await UnifiedWalletSetupService.setupFreshWallet(
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Creating wallet and setting up trading...'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+      
+      // Use unified wallet onboarding service for complete setup
+      final newUser = await UnifiedWalletOnboardingService.setupFreshWalletWithOnboarding(
         username: 'CosmicTrader',
         email: 'fresh-wallet@astratrade.app',
+        referralCode: null, // Can be added from UI if needed
       );
       
-      print('✅ Fresh wallet with trading capabilities created successfully');
+      print('✅ Fresh wallet with Extended Exchange trading created successfully');
 
       // Debug the user object
       print('📋 User created: ${newUser.toString()}');
       print('🔑 User ID: ${newUser.id}');
       print('📧 User Email: ${newUser.email}');
       print('🏠 User Address: ${newUser.starknetAddress}');
+      print('🔐 API Key: ${newUser.extendedExchangeApiKey?.substring(0, 8) ?? 'none'}...');
+      
+      // Dismiss loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
       
       // Sign in with the new wallet
       print('🔄 Setting user in auth provider...');
@@ -137,26 +154,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       
       // Navigate directly to main hub screen
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => DirectMainHubNavigation(user: newUser),
-          ),
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/trade-entry',
+          (route) => false,
         );
       }
       
-      // Note: Removed page reload workaround - now using proper state management fixes
-      
-      // Check auth state after setting user
-      final authState = ref.read(authProvider);
-      print('🔍 Auth state after setUser: ${authState.toString()}');
-      print('🔍 Auth state has value: ${authState.hasValue}');
-      print('🔍 Auth state value: ${authState.value?.toString() ?? 'null'}');
-
+      // Show success message
       if (mounted) {
+        final hasApiKey = newUser.extendedExchangeApiKey != null;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🎉 Fresh wallet created with trading! \nAddress: ${newUser.starknetAddress.substring(0, 6)}...${newUser.starknetAddress.substring(newUser.starknetAddress.length - 4)}'),
-            backgroundColor: Colors.green[700],
+            content: Text(
+              hasApiKey 
+                ? '🎉 Wallet created with Extended Exchange trading!\nAddress: ${newUser.starknetAddress.substring(0, 6)}...${newUser.starknetAddress.substring(newUser.starknetAddress.length - 4)}'
+                : '✅ Wallet created! Extended Exchange setup pending.\nAddress: ${newUser.starknetAddress.substring(0, 6)}...${newUser.starknetAddress.substring(newUser.starknetAddress.length - 4)}'
+            ),
+            backgroundColor: hasApiKey ? Colors.green[700] : Colors.orange[700],
             duration: const Duration(seconds: 4),
           ),
         );
@@ -165,6 +179,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       print('💥 Wallet creation failed: $e');
       print('📍 Error type: ${e.runtimeType}');
       print('📍 Stack trace: $stack');
+      
+      // Dismiss loading dialog if still showing
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -202,182 +222,362 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      body: Stack(
-        children: [
-          const EnhancedCosmicParticleBackground(),
-          SafeArea(
+      backgroundColor: Colors.grey[50],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                
+                // Back button (optional, can be removed if not needed)
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.canPop(context) ? Navigator.pop(context) : null,
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Logo and Title
+                _buildModernLogo(),
+                const SizedBox(height: 48),
+                
+                // Welcome Text
+                _buildModernWelcomeText(),
+                const SizedBox(height: 40),
+                
+                // Authentication Cards
+                _buildModernAuthCards(authState),
+                
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernLogo() {
+    return AnimatedBuilder(
+      animation: _fadeAnimation,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
             child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo and Title
-                        _buildCosmicLogo(),
-                        const SizedBox(height: 20),
-                        
-                        // Welcome Text
-                        _buildWelcomeText(),
-                        const SizedBox(height: 20),
-                        
-                        // Authentication Cards
-                        _buildAuthCards(authState),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.1),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
                       ],
                     ),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[600],
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.trending_up,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'AstraTrade',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your Gateway to Smart Trading',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          
-          if (authState.isLoading)
-            Container(
-              color: Colors.black54,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF7B2CBF),
-                ),
-              ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModernWelcomeText() {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Column(
+        children: [
+          const Text(
+            'Get Started',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Choose how you\'d like to begin your trading journey',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCosmicLogo() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const CosmicLogo(
-          size: 100,
-          animate: true,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'AstraTrade',
-          style: GoogleFonts.orbitron(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: 1.5,
-          ),
-        ),
-        Text(
-          'Cosmic Perpetuals Trading',
-          style: GoogleFonts.rajdhani(
-            fontSize: 14,
-            color: Colors.cyan.withOpacity(0.8),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWelcomeText() {
-    return Text(
-      'Choose your path',
-      style: GoogleFonts.orbitron(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    );
-  }
-
-  Widget _buildAuthCards(AsyncValue<User?> authState) {
-    return Column(
-      children: [
-        // Primary CTA - Fresh Wallet Creation
-        _buildCreateWalletCard(),
-        const SizedBox(height: 12),
-        
-        // Secondary - Import Existing Wallet
-        _buildImportWalletCard(),
-        const SizedBox(height: 12),
-        
-        // Tertiary - Social Login (inconvenient placement)
-        _buildSocialLoginCard(),
-        
-        // Learn More as subtle text link
-        const SizedBox(height: 8),
-        _buildLearnMoreLink(),
-      ],
-    );
-  }
-
-    Widget _buildCreateWalletCard() {
-    return _CosmicAuthCard(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF7B2CBF), Color(0xFF9D4EDD)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      icon: Icons.add_circle_outline,
-      title: 'Create Fresh Wallet',
-      subtitle: 'Generate a new Starknet wallet instantly',
-      primaryAction: 'Create Wallet',
-      secondaryAction: 'Quick Setup',
-      onPrimaryTap: _createFreshWallet,
-      onSecondaryTap: _createFreshWallet,
-      isPrimary: true,
-    );
-  }
-
-  Widget _buildImportWalletCard() {
-    return _CosmicAuthCard(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      icon: Icons.vpn_key,
-      title: 'Import Existing Wallet',
-      subtitle: 'Already have a Starknet wallet? Import it here',
-      primaryAction: 'Import Wallet',
-      onPrimaryTap: _navigateToImportWallet,
-    );
-  }
-
-  Widget _buildSocialLoginCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+  Widget _buildModernAuthCards(AsyncValue<User?> authState) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
       child: Column(
         children: [
-          const SizedBox(height: 12),
-          Text(
-            'Or connect with social accounts',
-            style: GoogleFonts.rajdhani(
-              fontSize: 12,
-              color: Colors.white54,
-            ),
-          ),
-          const SizedBox(height: 12),
+          // Primary CTA - Fresh Wallet Creation
+          _buildModernCreateWalletCard(),
+          const SizedBox(height: 16),
+          
+          // Secondary - Import Existing Wallet
+          _buildModernImportWalletCard(),
+          const SizedBox(height: 24),
+          
+          // Divider
           Row(
             children: [
-              Expanded(
-                child: _buildSocialButton(
-                  'Google',
-                  Icons.g_mobiledata,
-                  Colors.red,
-                  _handleGoogleSignIn,
+              Expanded(child: Divider(color: Colors.grey[300])),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'or',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
               ),
-              const SizedBox(width: 8),
+              Expanded(child: Divider(color: Colors.grey[300])),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Tertiary - Social Login
+          _buildModernSocialLoginCard(),
+          
+          // Learn More as subtle text link
+          const SizedBox(height: 16),
+          _buildModernLearnMoreLink(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernCreateWalletCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: _createFreshWallet,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet,
+                  size: 28,
+                  color: Colors.blue[600],
+                ),
+              ),
+              const SizedBox(width: 16),
               Expanded(
-                child: _buildSocialButton(
-                  'Apple',
-                  Icons.apple,
-                  Colors.white,
-                  _handleAppleSignIn,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Create New Wallet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Generate a new Starknet wallet instantly',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey[400],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernImportWalletCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: _navigateToImportWallet,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.vpn_key,
+                  size: 28,
+                  color: Colors.green[600],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Import Existing Wallet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Already have a Starknet wallet? Import it here',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey[400],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernSocialLoginCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: _handleGoogleSignIn,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  Icons.g_mobiledata,
+                  size: 24,
+                  color: Colors.red[600],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Continue with Google',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -411,148 +611,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildLearnMoreLink() {
-    return TextButton(
-      onPressed: _showLearnMoreModal,
-      child: Text(
-        'Learn about Starknet & self-custody →',
-        style: GoogleFonts.rajdhani(
-          fontSize: 14,
-          color: Colors.cyan.withOpacity(0.8),
-          decoration: TextDecoration.underline,
+  Widget _buildModernLearnMoreLink() {
+    return Center(
+      child: TextButton(
+        onPressed: _showLearnMoreModal,
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
-      ),
-    );
-  }
-}
-
-class _CosmicAuthCard extends StatelessWidget {
-  final Gradient gradient;
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String primaryAction;
-  final String? secondaryAction;
-  final VoidCallback onPrimaryTap;
-  final VoidCallback? onSecondaryTap;
-  final bool isPrimary;
-
-  const _CosmicAuthCard({
-    required this.gradient,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.primaryAction,
-    this.secondaryAction,
-    required this.onPrimaryTap,
-    this.onSecondaryTap,
-    this.isPrimary = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 8.0),
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: (isPrimary ? const Color(0xFF7B2CBF) : const Color(0xFF06B6D4)).withOpacity(0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 24, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.orbitron(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: GoogleFonts.rajdhani(
-                fontSize: 12,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildActionButtons(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: onPrimaryTap,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.2),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 0,
-            ),
-            child: Text(
-              primaryAction,
-              style: GoogleFonts.rajdhani(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+        child: Text(
+          'Learn about Starknet & self-custody',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.blue[600],
+            fontWeight: FontWeight.w500,
           ),
         ),
-        if (secondaryAction != null) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onSecondaryTap,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                secondaryAction!,
-                style: GoogleFonts.rajdhani(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/onboarding_provider.dart';
-import '../screens/trade_entry_screen.dart';
+import '../screens/login_screen.dart';
 import '../onboarding/paywall.dart';
 
 class OnboardingCompleteScreen extends ConsumerStatefulWidget {
@@ -67,7 +67,7 @@ class _OnboardingCompleteScreenState extends ConsumerState<OnboardingCompleteScr
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              const Spacer(),
+              const SizedBox(height: 40),
               
               // Success Animation
               AnimatedBuilder(
@@ -180,7 +180,7 @@ class _OnboardingCompleteScreenState extends ConsumerState<OnboardingCompleteScr
                 ),
               ),
               
-              const Spacer(),
+              const SizedBox(height: 40),
               
               // Action Buttons
               FadeTransition(
@@ -296,7 +296,7 @@ class _OnboardingCompleteScreenState extends ConsumerState<OnboardingCompleteScr
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const TradeEntryScreen(),
+        builder: (context) => const LoginScreen(),
       ),
     );
   }
